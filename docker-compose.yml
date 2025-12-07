@@ -6,9 +6,9 @@ services:
       - db_data:/app/db
       - uploads_data:/app/uploads
       - assets_data:/app/assets/styles
+    env_file:
+      - ./hairfit_server/.env
     environment:
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - SECRET_KEY=${SECRET_KEY}
       - SQLALCHEMY_DATABASE_URL=sqlite:///./db/hairfit.db
       - ALLOWED_ORIGINS=*
     command: >
