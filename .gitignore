@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+
+# Production
+dist/
+build/
+
+# Misc
+.DS_Store
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Python / Backend
+hairfit_server/__pycache__/
+hairfit_server/*.pyc
+hairfit_server/venv/
+hairfit_server/.env
+
+# Uploads (keep directories but ignore content)
+hairfit_server/uploads/originals/*
+!hairfit_server/uploads/originals/.gitkeep
+hairfit_server/uploads/profiles/*
+!hairfit_server/uploads/profiles/.gitkeep
+hairfit_server/uploads/results/*
+!hairfit_server/uploads/results/.gitkeep
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs
+*.njsproj
+*.sln
+*.sw?
