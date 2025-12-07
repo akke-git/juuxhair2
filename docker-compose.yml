@@ -13,18 +13,27 @@ services:
     command: >
       sh -c "mkdir -p db && uvicorn main:app --host 0.0.0.0 --port 8000"
     restart: always
-
+    networks:
+      - akke
+    
   frontend:
     build: 
       context: .
       dockerfile: Dockerfile
     ports:
-      - "80:80"
+      - "8083:80"
     depends_on:
       - backend
     restart: always
+    networks:
+      - akke
 
 volumes:
   db_data:
   uploads_data:
   assets_data:
+
+
+networks:
+  akke:
+    external: true
