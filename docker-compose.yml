@@ -8,6 +8,7 @@ services:
       - assets_data:/app/assets/styles
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - SECRET_KEY=${SECRET_KEY}
       - SQLALCHEMY_DATABASE_URL=sqlite:///./db/hairfit.db
       - ALLOWED_ORIGINS=*
     command: >
