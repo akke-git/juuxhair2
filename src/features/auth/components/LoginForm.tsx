@@ -6,13 +6,19 @@ import {
   Button,
   Alert,
   CircularProgress,
+  InputAdornment,
+  Divider,
+  Typography,
+  Link,
 } from '@mui/material'
 import { LoginRequest } from '../../../types'
 import { useAuth } from '../../../hooks/useAuth'
+import GoogleLoginButton from './GoogleLoginButton'
 
 export default function LoginForm() {
   const { login, loginError, isLoggingIn } = useAuth()
   const [showError, setShowError] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const {
     register,
@@ -26,18 +32,29 @@ export default function LoginForm() {
   }
 
   return (
-    <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ mt: 2 }}>
+    <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ mt: 1 }}>
       {showError && loginError && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert severity="error" sx={{ mb: 2, fontSize: '0.875rem' }}>
           {(loginError as Error).message || '로그인에 실패했습니다'}
         </Alert>
       )}
 
       <TextField
         fullWidth
-        label="이메일"
+        placeholder="Phone number, username, or email"
         type="email"
-        margin="normal"
+        size="small"
+        sx={{
+          mb: 1,
+          '& .MuiOutlinedInput-root': {
+            bgcolor: '#FAFAFA',
+            '& fieldset': { borderColor: '#dbdbdb' },
+            '&:hover fieldset': { borderColor: '#dbdbdb' },
+            '&.Mui-focused fieldset': { borderColor: '#a8a8a8' },
+            fontSize: '12px',
+          },
+          '& input': { p: 1.5 },
+        }}
         {...register('email', {
           required: '이메일을 입력해주세요',
           pattern: {
@@ -46,36 +63,87 @@ export default function LoginForm() {
           },
         })}
         error={!!errors.email}
-        helperText={errors.email?.message}
       />
 
       <TextField
         fullWidth
-        label="비밀번호"
-        type="password"
-        margin="normal"
+        placeholder="Password"
+        type={showPassword ? 'text' : 'password'}
+        size="small"
+        sx={{
+          mb: 2,
+          '& .MuiOutlinedInput-root': {
+            bgcolor: '#FAFAFA',
+            '& fieldset': { borderColor: '#dbdbdb' },
+            '&:hover fieldset': { borderColor: '#dbdbdb' },
+            '&.Mui-focused fieldset': { borderColor: '#a8a8a8' },
+            fontSize: '12px',
+          },
+          '& input': { p: 1.5 },
+        }}
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              <Button
+                onClick={() => setShowPassword(!showPassword)}
+                sx={{
+                  minWidth: 0,
+                  p: 0,
+                  fontWeight: 'bold',
+                  color: '#262626',
+                  textTransform: 'none',
+                  fontSize: '12px',
+                }}
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </Button>
+            </InputAdornment>
+          ),
+        }}
         {...register('password', {
           required: '비밀번호를 입력해주세요',
-          minLength: {
-            value: 6,
-            message: '비밀번호는 6자 이상이어야 합니다',
-          },
         })}
         error={!!errors.password}
-        helperText={errors.password?.message}
       />
 
       <Button
         type="submit"
         fullWidth
         variant="contained"
-        color="primary"
         size="large"
         disabled={isLoggingIn}
-        sx={{ mt: 3, mb: 2 }}
+        sx={{
+          mt: 1,
+          mb: 2,
+          bgcolor: '#0095F6',
+          fontWeight: 'bold',
+          textTransform: 'none',
+          boxShadow: 'none',
+          fontSize: '14px',
+          '&:hover': { bgcolor: '#1877F2', boxShadow: 'none' },
+        }}
       >
-        {isLoggingIn ? <CircularProgress size={24} color="inherit" /> : '로그인'}
+        {isLoggingIn ? <CircularProgress size={24} color="inherit" /> : 'Log In'}
       </Button>
+
+      <Box sx={{ display: 'flex', alignItems: 'center', my: 2 }}>
+        <Divider sx={{ flex: 1, borderColor: '#dbdbdb' }} />
+        <Typography
+          variant="caption"
+          sx={{ mx: 2, fontWeight: 'bold', color: '#8e8e8e', fontSize: '13px' }}
+        >
+          OR
+        </Typography>
+        <Divider sx={{ flex: 1, borderColor: '#dbdbdb' }} />
+      </Box>
+
+      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'center' }}>
+        <GoogleLoginButton />
+      </Box>
+
+      <Link href="#" underline="none" sx={{ color: '#00376B', fontSize: '12px' }}>
+        Forgot password?
+      </Link>
     </Box>
   )
 }

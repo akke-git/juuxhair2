@@ -76,20 +76,6 @@ export default function GalleryDetailPage() {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <IconButton onClick={() => navigate(-1)} sx={{ mr: 1 }}>
-            <ArrowBackIcon />
-          </IconButton>
-          <Typography variant="h5" fontWeight="bold">
-            상세보기
-          </Typography>
-        </Box>
-        <IconButton color="error" onClick={() => setDeleteOpen(true)}>
-          <DeleteIcon />
-        </IconButton>
-      </Box>
-
       {/* Result Image */}
       <Box
         sx={{
@@ -121,6 +107,18 @@ export default function GalleryDetailPage() {
         <Typography variant="body2" color="text.secondary">
           {formatDate(item.created_at)}
         </Typography>
+      </Box>
+
+      <Box sx={{ mt: 3, px: 1 }}>
+        <Button
+          variant="outlined"
+          color="error"
+          fullWidth
+          startIcon={<DeleteIcon />}
+          onClick={() => setDeleteOpen(true)}
+        >
+          삭제하기
+        </Button>
       </Box>
 
       {/* Delete Dialog */}

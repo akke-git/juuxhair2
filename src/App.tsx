@@ -1,5 +1,7 @@
+import { useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './store/authStore'
+import { useAuth } from './hooks/useAuth'
 import Layout from './components/common/Layout'
 import LoginPage from './features/auth/pages/LoginPage'
 import CrmPage from './features/crm/pages/CrmPage'
@@ -18,6 +20,14 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const setUser = useAuthStore((state) => state.setUser)
+  const { user } = useAuth()
+
+  useEffect(() => {
+    if (user) {
+      setUser(user)
+    }
+  }, [user, setUser])
 
   return (
     <Routes>

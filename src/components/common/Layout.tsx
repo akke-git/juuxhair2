@@ -22,7 +22,9 @@ import PeopleIcon from '@mui/icons-material/People'
 import CameraAltIcon from '@mui/icons-material/CameraAlt'
 import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary'
 import SettingsIcon from '@mui/icons-material/Settings'
+import LogoutIcon from '@mui/icons-material/Logout'
 import { useAuthStore } from '../../store/authStore'
+import { useAuth } from '../../hooks/useAuth'
 
 const DRAWER_WIDTH = 280
 
@@ -60,9 +62,15 @@ export default function Layout() {
   const navigate = useNavigate()
   const location = useLocation()
   const user = useAuthStore((state) => state.user)
+  const { logout } = useAuth()
 
   const handleNavigation = (path: string) => {
     navigate(path)
+    setDrawerOpen(false)
+  }
+
+  const handleLogout = () => {
+    logout()
     setDrawerOpen(false)
   }
 
@@ -131,6 +139,23 @@ export default function Layout() {
             </ListItemButton>
           </ListItem>
         ))}
+      </List>
+
+      <List sx={{ pb: 2 }}>
+        <ListItem disablePadding>
+          <ListItemButton onClick={handleLogout} sx={{ py: 1.5, px: 2.5 }}>
+            <ListItemIcon sx={{ minWidth: 40 }}>
+              <LogoutIcon color="error" />
+            </ListItemIcon>
+            <ListItemText
+              primary="Logout"
+              primaryTypographyProps={{
+                fontSize: '1rem',
+                color: 'error.main',
+              }}
+            />
+          </ListItemButton>
+        </ListItem>
       </List>
     </Box>
   )

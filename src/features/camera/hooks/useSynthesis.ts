@@ -44,10 +44,32 @@ export function useSaveResult() {
       // First upload the result image
       const resultPath = await synthesisApi.uploadResultPhoto(resultImage)
 
+      // Handle original image path
+      let finalOriginalPath = originalPath
+
+      // If original is a base64 string (new photo/camera), upload it
+      if (originalPath.startsWith('data:')) {
+        finalOriginalPath = await synthesisApi.uploadOriginalPhoto(originalPath)
+      }
+      // If original is a full URL (member photo), try to extract relative path
+      else if (originalPath.startsWith('http')) {
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'
+        if (originalPath.includes(baseUrl)) {
+          let relative = originalPath.replace(baseUrl, '')
+          if (relative.startsWith('/images/')) {
+            relative = relative.replace('/images/', '')
+          }
+          if (relative.startsWith('/')) {
+            relative = relative.substring(1)
+          }
+          finalOriginalPath = relative
+        }
+      }
+
       // Then save the history
       return synthesisApi.saveHistory({
         member_id: memberId,
-        original_photo_path: originalPath,
+        original_photo_path: finalOriginalPath,
         reference_style_id: styleId,
         result_photo_path: resultPath,
       })

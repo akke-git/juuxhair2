@@ -15,12 +15,18 @@ export function useAdminStyles() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['styles'] })
     },
+    onError: (error) => {
+      console.error('Failed to upload style:', error)
+    },
   })
 
   const deleteMutation = useMutation({
     mutationFn: adminApi.deleteStyle,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['styles'] })
+    },
+    onError: (error) => {
+      console.error('Failed to delete style:', error)
     },
   })
 
