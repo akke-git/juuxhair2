@@ -2,7 +2,6 @@ import { useNavigate, useParams } from 'react-router-dom'
 import {
   Box,
   Typography,
-  IconButton,
   CircularProgress,
   Button,
   Dialog,
@@ -10,7 +9,6 @@ import {
   DialogContent,
   DialogActions,
 } from '@mui/material'
-import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import DeleteIcon from '@mui/icons-material/Delete'
 import { useState } from 'react'
 import { useGalleryItem, useGallery } from '../hooks/useGallery'
