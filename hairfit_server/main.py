@@ -323,12 +323,13 @@ async def synthesize_hair(
 
         # 프롬프트 구성
         prompt = (
-            "Apply the hairstyle from the reference image (second image) to the person in the first image. "
-            "IMPORTANT: Keep the person's face, facial features, skin tone, and background EXACTLY the same. "
-            "DO NOT change the person's identity, face shape, or any facial features. "
-            "ONLY change the hairstyle to match the reference image. "
-            "Ensure the result looks natural and photorealistic. "
-            "Output only the modified image."
+            "1. Apply ONLY the hairstyle from the second reference image to the person in the first image.\n"
+            "2. CRITICAL: Keep the person's face PIXEL-PERFECT identical - same eye shape, nose shape, mouth shape, jawline, skin texture, skin tone, freckles/moles, facial hair, expression, and lighting EXACTLY as first image.\n"
+            "3. DO NOT alter face identity, proportions, age, gender, or any facial features whatsoever.\n"
+            "4. ONLY replace hair: match second image's hair length, style, texture, color, highlights, volume, and parting exactly.\n"
+            "5. Seamless photorealistic blend - hair must flow naturally from original face contour and lighting.\n"
+            "6. Background, clothing, pose remain 100% unchanged from first image.\n"
+            "7. Output only the final image."
         )
         print(f"Prompt: {prompt}")
 
