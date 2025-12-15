@@ -12,6 +12,7 @@ import SaveIcon from '@mui/icons-material/Save'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import { useCameraStore } from '../store/cameraStore'
 import { useSaveResult } from '../hooks/useSynthesis'
+import BeforeAfterSlider from '../../../components/common/BeforeAfterSlider'
 
 export default function ResultPage() {
   const navigate = useNavigate()
@@ -74,22 +75,21 @@ export default function ResultPage() {
         </Alert>
       )}
 
-      {/* Result Image */}
-      <Box
-        sx={{
-          width: '100%',
-          aspectRatio: '3/4',
-          bgcolor: 'grey.100',
-          borderRadius: 2,
-          overflow: 'hidden',
-          mb: 3,
-        }}
-      >
-        <img
-          src={`data:image/png;base64,${resultImage}`}
-          alt="Synthesis result"
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+      {/* Before/After Slider */}
+      <Box sx={{ mb: 3 }}>
+        <BeforeAfterSlider
+          originalImage={selectedImagePreview || ''}
+          resultImage={`data:image/png;base64,${resultImage}`}
         />
+        <Typography
+          variant="caption"
+          align="center"
+          display="block"
+          color="text.secondary"
+          sx={{ mt: 1 }}
+        >
+          좌우로 드래그하여 비교해보세요
+        </Typography>
       </Box>
 
       {selectedMember && (

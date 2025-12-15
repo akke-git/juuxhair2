@@ -55,8 +55,20 @@ export interface UpdateMemberRequest {
 // Style Types
 export interface Style {
   id: string
-  image_url: string
+  image_url?: string // deprecated in favor of image_path but kept for compatibility
+  image_path?: string
   name?: string
+  exists?: boolean
+  tags?: string[]
+  gender?: string
+  category?: string
+}
+
+export interface StyleUpdate {
+  name?: string
+  tags?: string[]
+  gender?: string
+  category?: string
 }
 
 // Synthesis Types

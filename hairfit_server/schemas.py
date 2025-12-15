@@ -93,3 +93,10 @@ class SynthesisHistoryResponse(SynthesisHistoryBase):
 
     class Config:
         from_attributes = True
+
+# Style Schemas
+class StyleUpdate(BaseModel):
+    name: Optional[str] = None
+    tags: Optional[List[str]] = None
+    gender: Optional[str] = None
+    category: Optional[str] = None

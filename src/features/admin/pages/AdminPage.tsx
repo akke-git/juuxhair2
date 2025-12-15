@@ -27,8 +27,14 @@ export default function AdminPage() {
     useAdminStyles()
   const { user, logout, isLoggingOut } = useAuth()
 
-  const handleUpload = async (file: File, name?: string) => {
-    await uploadStyle(file, name)
+  const handleUpload = async (
+    file: File, 
+    name?: string,
+    tags?: string[],
+    gender?: string,
+    category?: string
+  ) => {
+    await uploadStyle(file, name, tags, gender, category)
   }
 
   const handleDeleteConfirm = async () => {

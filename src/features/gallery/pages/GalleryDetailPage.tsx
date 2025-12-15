@@ -13,6 +13,7 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import { useState } from 'react'
 import { useGalleryItem, useGallery } from '../hooks/useGallery'
 import { useMembers } from '../../crm/hooks/useMembers'
+import BeforeAfterSlider from '../../../components/common/BeforeAfterSlider'
 
 export default function GalleryDetailPage() {
   const navigate = useNavigate()
@@ -29,10 +30,12 @@ export default function GalleryDetailPage() {
   }
 
   const getImageUrl = (path?: string) => {
-    if (!path) return undefined
+    if (!path) return ''
     if (path.startsWith('http') || path.startsWith('data:')) return path
     const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'
-    return `${baseUrl}${path}`
+    // Ensure path starts with slash if not present
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`
+    return `${baseUrl}${normalizedPath}`
   }
 
   const formatDate = (dateStr: string) => {
@@ -74,22 +77,21 @@ export default function GalleryDetailPage() {
 
   return (
     <Box>
-      {/* Result Image */}
-      <Box
-        sx={{
-          width: '100%',
-          aspectRatio: '3/4',
-          bgcolor: 'grey.100',
-          borderRadius: 2,
-          overflow: 'hidden',
-          mb: 2,
-        }}
-      >
-        <img
-          src={getImageUrl(item.result_photo_path)}
-          alt="Synthesis result"
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+      {/* Before/After Slider */}
+      <Box sx={{ mb: 2 }}>
+        <BeforeAfterSlider
+          originalImage={getImageUrl(item.original_photo_path)}
+          resultImage={getImageUrl(item.result_photo_path)}
         />
+        <Typography
+          variant="caption"
+          align="center"
+          display="block"
+          color="text.secondary"
+          sx={{ mt: 1 }}
+        >
+          좌우로 드래그하여 비교해보세요
+        </Typography>
       </Box>
 
       {/* Details */}

@@ -1,0 +1,35 @@
+{
+  "style_4": {
+    "tags": [],
+    "gender": "neutral",
+    "category": "unknown"
+  },
+  "style_1": {
+    "tags": [],
+    "gender": "neutral",
+    "category": "unknown"
+  },
+  "style_5": {
+    "tags": [],
+    "gender": "neutral",
+    "category": "unknown"
+  },
+  "style_2": {
+    "tags": [],
+    "gender": "neutral",
+    "category": "unknown"
+  },
+  "style_3": {
+    "tags": [],
+    "gender": "neutral",
+    "category": "unknown"
+  },
+  "style_6": {
+    "name": "h7",
+    "tags": [
+      "퍼퍼펌"
+    ],
+    "gender": "female",
+    "category": "perm"
+  }
+}

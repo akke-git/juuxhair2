@@ -8,13 +8,23 @@ import {
   TextField,
   Box,
   CircularProgress,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Select,
 } from '@mui/material'
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate'
 
 interface AddStyleDialogProps {
   open: boolean
   onClose: () => void
-  onUpload: (file: File, name?: string) => Promise<void>
+  onUpload: (
+    file: File, 
+    name?: string, 
+    tags?: string[], 
+    gender?: string, 
+    category?: string
+  ) => Promise<void>
   isUploading: boolean
 }
 
@@ -28,6 +38,9 @@ export default function AddStyleDialog({
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [name, setName] = useState('')
+  const [tags, setTags] = useState('')
+  const [gender, setGender] = useState('neutral')
+  const [category, setCategory] = useState('unknown')
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
@@ -43,7 +56,8 @@ export default function AddStyleDialog({
 
   const handleUpload = async () => {
     if (!file) return
-    await onUpload(file, name || undefined)
+    const tagsList = tags.split(',').map(tag => tag.trim()).filter(tag => tag)
+    await onUpload(file, name || undefined, tagsList, gender, category)
     handleClose()
   }
 
@@ -51,6 +65,9 @@ export default function AddStyleDialog({
     setFile(null)
     setPreview(null)
     setName('')
+    setTags('')
+    setGender('neutral')
+    setCategory('unknown')
     onClose()
   }
 
@@ -94,13 +111,47 @@ export default function AddStyleDialog({
           onChange={handleFileSelect}
         />
 
-        <TextField
-          fullWidth
-          label="스타일 이름 (선택)"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          size="small"
-        />
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField
+            fullWidth
+            label="스타일 이름 (선택)"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            size="small"
+          />
+          <TextField
+            fullWidth
+            label="태그 (쉼표로 구분, 예: 숏컷, 펌)"
+            value={tags}
+            onChange={(e) => setTags(e.target.value)}
+            size="small"
+          />
+          <FormControl fullWidth size="small">
+            <InputLabel>성별</InputLabel>
+            <Select
+              value={gender}
+              label="성별"
+              onChange={(e) => setGender(e.target.value)}
+            >
+              <MenuItem value="neutral">무관</MenuItem>
+              <MenuItem value="male">남성</MenuItem>
+              <MenuItem value="female">여성</MenuItem>
+            </Select>
+          </FormControl>
+          <FormControl fullWidth size="small">
+            <InputLabel>카테고리</InputLabel>
+            <Select
+              value={category}
+              label="카테고리"
+              onChange={(e) => setCategory(e.target.value)}
+            >
+              <MenuItem value="unknown">미지정</MenuItem>
+              <MenuItem value="cut">커트</MenuItem>
+              <MenuItem value="perm">펌</MenuItem>
+              <MenuItem value="color">염색</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose}>취소</Button>

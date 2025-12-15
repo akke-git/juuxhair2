@@ -241,10 +241,35 @@ def logout(token_refresh: schemas.TokenRefresh, db: Session = Depends(database.g
 
 # --- AI Synthesis Endpoints ---
 
+import json
 import base64
 
 # 스타일 ID와 참조 이미지 경로 매핑 (동적으로 관리)
 STYLE_IMAGES = {}
+STYLE_METADATA = {}
+METADATA_FILE = Path("assets/styles/metadata.json")
+
+def load_style_metadata():
+    """Load style metadata from JSON file"""
+    global STYLE_METADATA
+    if METADATA_FILE.exists():
+        try:
+            with open(METADATA_FILE, "r", encoding="utf-8") as f:
+                STYLE_METADATA = json.load(f)
+            print(f"Loaded metadata for {len(STYLE_METADATA)} styles")
+        except Exception as e:
+            print(f"Error loading metadata: {e}")
+            STYLE_METADATA = {}
+    else:
+        STYLE_METADATA = {}
+
+def save_style_metadata():
+    """Save style metadata to JSON file"""
+    try:
+        with open(METADATA_FILE, "w", encoding="utf-8") as f:
+            json.dump(STYLE_METADATA, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"Error saving metadata: {e}")
 
 def load_style_images():
     """Load all style images from assets/styles directory"""
@@ -264,14 +289,26 @@ def load_style_images():
             if style_id.startswith("style_"):
                 # Convert Windows backslashes to forward slashes for consistency
                 STYLE_IMAGES[style_id] = str(file_path).replace('\\', '/')
+                
+                # Initialize metadata if not exists
+                if style_id not in STYLE_METADATA:
+                    STYLE_METADATA[style_id] = {
+                        "tags": [],
+                        "gender": "neutral",
+                        "category": "unknown"
+                    }
 
+    # Save initialized metadata
+    save_style_metadata()
     print(f"Loaded {len(STYLE_IMAGES)} style images: {list(STYLE_IMAGES.keys())}")
 
 @app.on_event("startup")
 async def startup_event():
     print("Server starting up...")
 
-    # Load style images from assets/styles directory
+    # Load metadata first
+    load_style_metadata()
+    # Then load images and sync
     load_style_images()
 
     if GEMINI_API_KEY:
@@ -405,11 +442,15 @@ async def get_styles(current_user: models.User = Depends(auth.get_current_user))
     try:
         styles = []
         for style_id, image_path in STYLE_IMAGES.items():
+            metadata = STYLE_METADATA.get(style_id, {})
             style_info = {
                 "id": style_id,
-                "name": style_id.replace("_", " ").title(),
+                "name": metadata.get("name") or style_id.replace("_", " ").title(),
                 "image_path": image_path.replace("assets/", ""),
-                "exists": os.path.exists(image_path)
+                "exists": os.path.exists(image_path),
+                "tags": metadata.get("tags", []),
+                "gender": metadata.get("gender", "neutral"),
+                "category": metadata.get("category", "unknown")
             }
             styles.append(style_info)
 
@@ -422,7 +463,11 @@ async def get_styles(current_user: models.User = Depends(auth.get_current_user))
 async def upload_style(
     request: Request,
     file: UploadFile = File(...),
-    style_id: str = Form(None),  # Optional, will auto-generate if not provided
+    style_id: str = Form(None),
+    name: str = Form(None),
+    tags: str = Form("[]"),  # JSON string of tags
+    gender: str = Form("neutral"),
+    category: str = Form("unknown"),
     current_user: models.User = Depends(auth.get_current_user)
 ):
     """Upload a new hairstyle reference image"""
@@ -465,6 +510,21 @@ async def upload_style(
 
         # Update STYLE_IMAGES mapping
         STYLE_IMAGES[style_id] = file_path
+        
+        # Parse tags
+        try:
+            tags_list = json.loads(tags)
+        except:
+            tags_list = []
+
+        # Update Metadata
+        STYLE_METADATA[style_id] = {
+            "name": name,
+            "tags": tags_list,
+            "gender": gender,
+            "category": category
+        }
+        save_style_metadata()
 
         return {
             "message": "Style uploaded successfully",
@@ -473,6 +533,38 @@ async def upload_style(
         }
     except HTTPException:
         raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/styles/{style_id}")
+async def update_style_metadata(
+    style_id: str,
+    metadata: schemas.StyleUpdate = None,
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    """Update style metadata (tags, gender, etc)"""
+    try:
+        if style_id not in STYLE_IMAGES:
+            raise HTTPException(status_code=404, detail="Style not found")
+            
+        if not metadata:
+             raise HTTPException(status_code=400, detail="No metadata provided")
+
+        current_meta = STYLE_METADATA.get(style_id, {})
+        
+        if metadata.name is not None:
+            current_meta["name"] = metadata.name
+        if metadata.tags is not None:
+            current_meta["tags"] = metadata.tags
+        if metadata.gender is not None:
+            current_meta["gender"] = metadata.gender
+        if metadata.category is not None:
+            current_meta["category"] = metadata.category
+            
+        STYLE_METADATA[style_id] = current_meta
+        save_style_metadata()
+        
+        return {"message": "Style updated successfully", "style": current_meta}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -494,6 +586,11 @@ async def delete_style(
 
         # Remove from mapping
         del STYLE_IMAGES[style_id]
+        
+        # Remove from metadata
+        if style_id in STYLE_METADATA:
+            del STYLE_METADATA[style_id]
+            save_style_metadata()
 
         return {"message": "Style deleted successfully"}
     except HTTPException:

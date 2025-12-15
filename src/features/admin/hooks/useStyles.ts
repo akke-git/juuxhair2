@@ -10,8 +10,20 @@ export function useAdminStyles() {
   })
 
   const uploadMutation = useMutation({
-    mutationFn: ({ file, name }: { file: File; name?: string }) =>
-      adminApi.uploadStyle(file, name),
+    mutationFn: ({ 
+      file, 
+      name,
+      tags,
+      gender,
+      category
+    }: { 
+      file: File; 
+      name?: string;
+      tags?: string[];
+      gender?: string;
+      category?: string;
+    }) =>
+      adminApi.uploadStyle(file, name, tags, gender, category),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['styles'] })
     },
@@ -35,8 +47,14 @@ export function useAdminStyles() {
     isLoading: stylesQuery.isLoading,
     error: stylesQuery.error,
     refetch: stylesQuery.refetch,
-    uploadStyle: (file: File, name?: string) =>
-      uploadMutation.mutateAsync({ file, name }),
+    uploadStyle: (
+      file: File, 
+      name?: string, 
+      tags?: string[], 
+      gender?: string, 
+      category?: string
+    ) =>
+      uploadMutation.mutateAsync({ file, name, tags, gender, category }),
     isUploading: uploadMutation.isPending,
     deleteStyle: deleteMutation.mutateAsync,
     isDeleting: deleteMutation.isPending,
