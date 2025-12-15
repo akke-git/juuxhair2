@@ -9,4 +9,6 @@ python-jose[cryptography]
 pydantic[email]
 slowapi
 pillow
+pytest
+httpx
 

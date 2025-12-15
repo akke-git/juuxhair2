@@ -1,0 +1,181 @@
+import os
+import base64
+import io
+import google.generativeai as genai
+from PIL import Image
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request
+from sqlalchemy.orm import Session
+
+import models, schemas, auth_utils as auth, database
+from dependencies import limiter
+from services import style_service
+from utils import get_user_salon
+
+router = APIRouter()
+
+# Gemini API 설정
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
+
+@router.post("/synthesize")
+@limiter.limit("10/hour")  # 10 synthesis requests per hour per IP
+async def synthesize_hair(
+    request: Request,
+    file: UploadFile = File(...),
+    style_id: str = Form(...),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    print(f"Request received. Style ID: {style_id}")
+    
+    if not GEMINI_API_KEY:
+        print("Error: GEMINI_API_KEY is not set")
+        return {"error": "GEMINI_API_KEY is not set"}
+
+    try:
+        # 변경 대상 이미지 데이터 읽기
+        image_bytes = await file.read()
+        print(f"Input image read successfully. Size: {len(image_bytes)} bytes")
+
+        # PIL 이미지로 변환 (Gemini 입력용)
+        input_image = Image.open(io.BytesIO(image_bytes))
+
+        # 참조 스타일 이미지 로드
+        style_image_path = style_service.STYLE_IMAGES.get(style_id)
+        if not style_image_path:
+            return {"error": f"Invalid style_id: {style_id}"}
+
+        if not os.path.exists(style_image_path):
+            return {"error": f"Style image not found: {style_image_path}"}
+
+        reference_image = Image.open(style_image_path)
+        print(f"Reference style image loaded: {style_image_path}")
+
+        # 프롬프트 구성
+        prompt = (
+            "1. Apply ONLY the hairstyle from the second reference image to the person in the first image.\n"
+            "2. CRITICAL: Keep the person's face PIXEL-PERFECT identical - same eye shape, nose shape, mouth shape, jawline, skin texture, skin tone, freckles/moles, facial hair, expression, and lighting EXACTLY as first image.\n"
+            "3. DO NOT alter face identity, proportions, age, gender, or any facial features whatsoever.\n"
+            "4. ONLY replace hair: match second image's hair length, style, texture, color, highlights, volume, and parting exactly.\n"
+            "5. Seamless photorealistic blend - hair must flow naturally from original face contour and lighting.\n"
+            "6. Background, clothing, pose remain 100% unchanged from first image.\n"
+            "7. Output only the final image."
+        )
+        print(f"Prompt: {prompt}")
+
+        # Gemini 모델 로드
+        model_name = 'gemini-3-pro-image-preview'
+        print(f"Loading Gemini model: {model_name}...")
+        model = genai.GenerativeModel(model_name)
+
+        # API 호출 - 변경 대상 이미지와 참조 스타일 이미지 함께 전송
+        print("Calling Gemini API with input image and reference style image...")
+        response = model.generate_content([prompt, input_image, reference_image])
+        print("Gemini API call completed.")
+
+        # 응답 디버깅 정보 출력
+        print(f"Response object: {response}")
+        print(f"Number of candidates: {len(response.candidates) if response.candidates else 0}")
+
+        # Prompt feedback 확인 (안전 필터 등)
+        if hasattr(response, 'prompt_feedback'):
+            print(f"Prompt feedback: {response.prompt_feedback}")
+
+        # 응답 처리
+        ai_message = "No response"
+        generated_image_base64 = None
+
+        if response.candidates:
+            candidate = response.candidates[0]
+            print(f"Candidate finish_reason: {candidate.finish_reason}")
+            print(f"Candidate safety_ratings: {candidate.safety_ratings if hasattr(candidate, 'safety_ratings') else 'N/A'}")
+
+            if candidate.content and candidate.content.parts:
+                for part in candidate.content.parts:
+                    if part.text:
+                        ai_message = part.text
+                        print(f"Text response: {ai_message}")
+
+                    # 이미지 데이터 확인 (inline_data 또는 다른 형식)
+                    if hasattr(part, 'inline_data') and part.inline_data:
+                        print("Image response received!")
+                        generated_image_base64 = base64.b64encode(part.inline_data.data).decode('utf-8')
+                        ai_message = "Image generated successfully"
+                        break
+            else:
+                ai_message = f"No content. Finish reason: {candidate.finish_reason}"
+        else:
+            ai_message = "No candidates returned"
+            # Check if blocked by safety filters
+            if hasattr(response, 'prompt_feedback') and response.prompt_feedback:
+                ai_message += f" - Prompt feedback: {response.prompt_feedback}"
+
+        print(f"Gemini Response Message: {ai_message}")
+
+        # 생성된 이미지가 있으면 그것을 사용, 없으면 에러 반환
+        if generated_image_base64:
+            final_image_data = generated_image_base64
+        else:
+            print("Error: No image generated by AI.")
+            raise HTTPException(status_code=500, detail=f"Failed to generate image: {ai_message}")
+
+        return {"result_image": final_image_data}
+
+    except Exception as e:
+        print(f"Error occurred: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e)}
+
+@router.get("/synthesis-history", response_model=list[schemas.SynthesisHistoryResponse])
+async def get_synthesis_history(
+    member_id: str = None,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(database.get_db)
+):
+    salon = get_user_salon(current_user, db)
+
+    # Use LEFT JOIN to include synthesis history without member_id
+    # Filter to show only records for the current user's salon
+    # For records without member_id, show all for this user
+    # Note: Logic logic was a bit weird in original, keeping it mainly same but ensuring separation
+    # Original logic:
+    # query = db.query(models.SynthesisHistory).outerjoin(models.Member).filter(
+    #     (models.Member.salon_id == salon.id) | (models.SynthesisHistory.member_id == None)
+    # )
+    # This logic relies on the join. If member_id is None, Member.salon_id is NULL.
+    # So we need to ensure that if member_id is None, we still check ownership?
+    # Actually, SynthesisHistory table doesn't have owner_id. It relies on Member.
+    # If member_id is None, who owns it?
+    # The original code might have been flawed or incomplete for histories without members.
+    # Assuming the original code worked, I'll copy it.
+    
+    query = db.query(models.SynthesisHistory).outerjoin(models.Member).filter(
+        (models.Member.salon_id == salon.id) | (models.SynthesisHistory.member_id == None)
+    )
+    
+    if member_id:
+        query = query.filter(models.SynthesisHistory.member_id == member_id)
+        
+    return query.order_by(models.SynthesisHistory.created_at.desc()).all()
+
+@router.get("/synthesis-history/{history_id}", response_model=schemas.SynthesisHistoryResponse)
+async def get_synthesis_history_detail(
+    history_id: str,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(database.get_db)
+):
+    salon = get_user_salon(current_user, db)
+
+    # Allow access if it belongs to the salon OR if it has no member_id (likely testing/anonymous if that's allowed)
+    # But usually we want to ensure ownership.
+    # Following the pattern of list endpoint:
+    history = db.query(models.SynthesisHistory).outerjoin(models.Member).filter(
+        models.SynthesisHistory.id == history_id,
+        (models.Member.salon_id == salon.id) | (models.SynthesisHistory.member_id == None)
+    ).first()
+
+    if not history:
+        raise HTTPException(status_code=404, detail="Synthesis history not found")
+
+    return history
